@@ -4,92 +4,103 @@
 
 using namespace std;
 
-double norma_1_matrix(const Matrix& C) {
+// L1-норма матрицы (максимальная сумма модулей по столбцам)
+double L1MatrixNorm(const Matrix& C) {
     double max_sum = 0.0;
 
-    for (int j = 0; j < C.len; j++) {
+    for (int j = 0; j < C.Dimension; j++) {
         double sum = 0.0;
-        for (int i = 0; i < C.len; i++) {
-            sum += abs(C.a[i][j]);
+        for (int i = 0; i < C.Dimension; i++) {
+            sum += abs(C.numbersMatrix[i][j]);
         }
         max_sum = max(max_sum, sum);
     }
     return max_sum;
 }
 
-double norma_inf_matrix(const Matrix& C) {
+// Бесконечная норма матрицы (максимальная сумма модулей по строкам)
+double InfMatrixNorm(const Matrix& C) {
     double max_sum = 0.0;
 
-    for (int i = 0; i < C.len; i++) {
+    for (int i = 0; i < C.Dimension; i++) {
         double sum = 0.0;
-        for (int j = 0; j < C.len; j++) {
-            sum += abs(C.a[i][j]);
+        for (int j = 0; j < C.Dimension; j++) {
+            sum += abs(C.numbersMatrix[i][j]);
         }
         max_sum = max(max_sum, sum);
     }
     return max_sum;
 }
 
-double norma_1_vector(const Vector& v) {
+// L1-норма вектора (сумма модулей элементов)
+double L1VectorNorm(const Vector& v) {
     double sum = 0.0;
-    for (int i = 0; i < v.n; i++) {
-        sum += abs(v.v[i]);
+    for (int i = 0; i < v.Dimension; i++) {
+        sum += abs(v.numbersVector[i]);
     }
     return sum;
 }
 
-double norma_inf_vector(const Vector& v) {
+// Бесконечная норма вектора (максимальный по модулю элемент)
+double InfVectorNorm(const Vector& v) {
     double max_val = 0.0;
-    for (int i = 0; i < v.n; i++) {
-        max_val = max(max_val, abs(v.v[i]));
+    for (int i = 0; i < v.Dimension; i++) {
+        max_val = max(max_val, abs(v.numbersVector[i]));
     }
     return max_val;
 }
 
-double norma_2_vector(const Vector& v) {
+// Евклидова (L2) норма вектора
+double L2VectorNorm(const Vector& v) {
     double sum = 0.0;
-    for (int i = 0; i < v.n; i++) {
-        sum += v.v[i] * v.v[i];
+    for (int i = 0; i < v.Dimension; i++) {
+        sum += v.numbersVector[i] * v.numbersVector[i];
     }
     return sqrt(sum);
 }
 
-
-
+// Решает систему Ax = b методом простых итераций
 Vector MPI(Matrix A, Vector b, double e, int n) {
-    Matrix E = Matrix::identity(n);
+    Matrix E = Matrix::MakeIdentityMatrix(n);
 
-    double u = 1.0 / norma_inf_matrix(A);
+    // Выбор параметра релаксации
+    double u = 1.0 / InfMatrixNorm(A);
+
+    // Формируем матрицу итераций: B = E - uA
     Matrix B = E - u * A;
 
-    if (norma_inf_matrix(B) >= 1) {
+    // Если условие сходимости не выполняется
+    if (InfMatrixNorm(B) >= 1) {
+        // Переход к нормальной системе A^T A x = A^T b
         Matrix A_n = A;
-        A = A.transpose();
+        A = A.Transpose();
         b = A * b;
         A = A * A_n;
 
-        u = 1.0 / norma_inf_matrix(A);
+        u = 1.0 / InfMatrixNorm(A);
         B = E - u * A;
     }
 
     Vector c = u * b;
 
-    double normB = norma_inf_matrix(B);
+    double normB = InfMatrixNorm(B);
 
     Vector x0 = c;
     Vector x1 = B * x0 + c;
 
     int iter = 1;
 
+    // Оценка ошибки через норму B
     if (normB < 1) {
-        while ((normB / (1 - normB)) * norma_inf_vector(x1 - x0) > e) {
+        while ((normB / (1 - normB)) * InfVectorNorm(x1 - x0) > e) {
             x0 = x1;
             x1 = B * x0 + c;
             iter++;
         }
     }
     else {
-        while (norma_inf_vector(A * x1 - b) > e) {
+        // Альтернативный критерий (через невязку)
+        while (InfVectorNorm(A * x1 - b) > e) {
             x0 = x1;
             x1 = B * x0 + c;
             iter++;
@@ -100,24 +111,26 @@ Vector MPI(Matrix A, Vector b, double e, int n) {
     return x1;
 }
 
-
-Vector method_Seidel(Matrix A, Vector b, double e, int n) {
+// Решает систему Ax = b методом Зейделя 
+Vector Seidel(Matrix A, Vector b, double e, int n) {
     bool need_transform = false;
 
+    // Проверка диагонального преобладания
     for (int i = 0; i < n; i++) {
         double sum = 0;
         for (int j = 0; j < n; j++) {
-            sum += abs(A.a[i][j]);
+            sum += abs(A.numbersMatrix[i][j]);
         }
-        if (sum > 2 * abs(A.a[i][i])) {
+        if (sum > 2 * abs(A.numbersMatrix[i][i])) {
             need_transform = true;
             break;
         }
     }
 
+    // Приведение к A^T A x = A^T b
     if (need_transform) {
         Matrix A_n = A;
-        A = A.transpose();
+        A = A.Transpose();
         b = A * b;
         A = A * A_n;
     }
@@ -125,13 +138,14 @@ Vector method_Seidel(Matrix A, Vector b, double e, int n) {
     Matrix C = A;
     Vector d = b;
 
+    // Приведение к итерационному виду x = Cx + d
     for (int i = 0; i < n; i++) {
-        d.v[i] /= A.a[i][i];
+        d.numbersVector[i] /= A.numbersMatrix[i][i];
         for (int j = 0; j < n; j++) {
             if (i != j)
-                C.a[i][j] = -C.a[i][j] / A.a[i][i];
+                C.numbersMatrix[i][j] = -C.numbersMatrix[i][j] / A.numbersMatrix[i][i];
             else
-                C.a[i][j] = 0;
+                C.numbersMatrix[i][j] = 0;
         }
     }
 
@@ -140,24 +154,24 @@ Vector method_Seidel(Matrix A, Vector b, double e, int n) {
 
     for (int i = 0; i < n; i++) {
         for (int g = 0; g < i; g++)
-            x1.v[i] += C.a[i][g] * x1.v[g];
+            x1.numbersVector[i] += C.numbersMatrix[i][g] * x1.numbersVector[g];
 
         for (int j = i + 1; j < n; j++)
-            x1.v[i] += C.a[i][j] * x0.v[j];
+            x1.numbersVector[i] += C.numbersMatrix[i][j] * x0.numbersVector[j];
     }
 
     int iter = 1;
 
-    while (norma_inf_vector(A * x1 - b) > e) {
+    while (InfVectorNorm(A * x1 - b) > e) {
         x0 = x1;
         x1 = d;
 
         for (int i = 0; i < n; i++) {
             for (int g = 0; g < i; g++)
-                x1.v[i] += C.a[i][g] * x1.v[g];
+                x1.numbersVector[i] += C.numbersMatrix[i][g] * x1.numbersVector[g];
 
             for (int j = i + 1; j < n; j++)
-                x1.v[i] += C.a[i][j] * x0.v[j];
+                x1.numbersVector[i] += C.numbersMatrix[i][j] * x0.numbersVector[j];
         }
         iter++;
     }
@@ -166,10 +180,11 @@ Vector method_Seidel(Matrix A, Vector b, double e, int n) {
     return x1;
 }
 
-
+// Решение Ax = b через LU-разложение с перестановками
 Vector PLU(Matrix A, Vector b, int n) {
-    Matrix P = Matrix::identity(n);
+    Matrix P = Matrix::MakeIdentityMatrix(n);
 
+    // Прямой ход (LU-разложение)
     for (int k = 0; k < n - 1; k++) {
 
         for (int j = k; j < n; j++) {
@@ -177,20 +192,20 @@ Vector PLU(Matrix A, Vector b, int n) {
             int max_i = j;
 
             for (int i = j; i < n; i++) {
-                if (abs(A.a[i][j]) > max_row) {
-                    max_row = abs(A.a[i][j]);
+                if (abs(A.numbersMatrix[i][j]) > max_row) {
+                    max_row = abs(A.numbersMatrix[i][j]);
                     max_i = i;
                 }
             }
 
-            swap(A.a[j], A.a[max_i]);
-            swap(P.a[j], P.a[max_i]);
+            swap(A.numbersMatrix[j], A.numbersMatrix[max_i]);
+            swap(P.numbersMatrix[j], P.numbersMatrix[max_i]);
         }
 
         for (int j = k + 1; j < n; j++) {
-            A.a[j][k] /= A.a[k][k];
+            A.numbersMatrix[j][k] /= A.numbersMatrix[k][k];
             for (int d = k + 1; d < n; d++) {
-                A.a[j][d] -= A.a[j][k] * A.a[k][d];
+                A.numbersMatrix[j][d] -= A.numbersMatrix[j][k] * A.numbersMatrix[k][d];
             }
         }
     }
@@ -200,77 +215,82 @@ Vector PLU(Matrix A, Vector b, int n) {
 
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
-            if (i == j) L.a[i][j] = 1;
-            if (i < j) L.a[i][j] = 0;
-            if (i > j) U.a[i][j] = 0;
+            if (i == j) L.numbersMatrix[i][j] = 1;
+            if (i < j) L.numbersMatrix[i][j] = 0;
+            if (i > j) U.numbersMatrix[i][j] = 0;
         }
     }
 
     b = P * b;
 
+    // Решение Ly = b (прямой ход)
     Vector y = b;
-
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < i; j++) {
-            y.v[i] -= L.a[i][j] * y.v[j];
+            y.numbersVector[i] -= L.numbersMatrix[i][j] * y.numbersVector[j];
         }
     }
 
+    // Решение Ux = y (обратный ход)
     Vector x = y;
-
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < i; j++) {
-            x.v[n - 1 - i] -= U.a[n - 1 - i][n - 1 - j] * x.v[n - 1 - j];
+            x.numbersVector[n - 1 - i] -= U.numbersMatrix[n - 1 - i][n - 1 - j] * x.numbersVector[n - 1 - j];
         }
-        x.v[n - 1 - i] /= U.a[n - 1 - i][n - 1 - i];
+        x.numbersVector[n - 1 - i] /= U.numbersMatrix[n - 1 - i][n - 1 - i];
     }
 
     return x;
 }
 
-
+// Решение Ax = b через QR-разложение
 Vector QR(Matrix A, Vector b, int n) {
 
-    Matrix Q = Matrix::identity(n);
+    Matrix Q = Matrix::MakeIdentityMatrix(n);
     Matrix R = A;
 
     int k = 0;
 
+    // Построение QR-разложения
     while (k < n - 1) {
 
         Matrix R_x(n - k);
         for (int i = 0; i < n - k; i++) {
             for (int j = 0; j < n - k; j++) {
-                R_x.a[i][j] = R.a[i + k][j + k];
+                R_x.numbersMatrix[i][j] = R.numbersMatrix[i + k][j + k];
             }
         }
 
+        // Вектор для отражения Хаусхолдера
         Vector z(n - k);
-        z.v[0] = 1;
+        z.numbersVector[0] = 1;
 
         Vector y(n - k);
-        for (int i = 0; i < y.n; i++) {
-            y.v[i] = R.a[i + k][k];
+        for (int i = 0; i < y.Dimension; i++) {
+            y.numbersVector[i] = R.numbersMatrix[i + k][k];
         }
 
-        Vector w = y - norma_2_vector(y) * z;
-        w = (1.0 / norma_2_vector(w)) * w;
+        Vector w = y - L2VectorNorm(y) * z;
+        w = (1.0 / L2VectorNorm(w)) * w;
 
-        Matrix E = Matrix::identity(n - k);
+        Matrix E = Matrix::MakeIdentityMatrix(n - k);
+
+        // Матрица Хаусхолдера
         Matrix Q_x = E - 2 * (w * w);
 
         R_x = Q_x * R_x;
 
         for (int i = 0; i < n - k; i++) {
             for (int j = 0; j < n - k; j++) {
-                R.a[i + k][j + k] = R_x.a[i][j];
+                R.numbersMatrix[i + k][j + k] = R_x.numbersMatrix[i][j];
             }
         }
 
-        Matrix Q_dop = Matrix::identity(n);
+        // Расширяем Q_x до полной размерности
+        Matrix Q_dop = Matrix::MakeIdentityMatrix(n);
         for (int i = 0; i < n - k; i++) {
             for (int j = 0; j < n - k; j++) {
-                Q_dop.a[i + k][j + k] = Q_x.a[i][j];
+                Q_dop.numbersMatrix[i + k][j + k] = Q_x.numbersMatrix[i][j];
             }
         }
 
@@ -279,17 +299,20 @@ Vector QR(Matrix A, Vector b, int n) {
         k++;
     }
 
-    Q = Q.transpose();
+    // Получаем ортогональную матрицу Q
+    Q = Q.Transpose();
 
+    // Решаем Q^T b
     Vector f = Q * b;
 
+    // Решаем Rx = f (обратный ход)
     Vector x = f;
 
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < i; j++) {
-            x.v[n - 1 - i] -= R.a[n - 1 - i][n - 1 - j] * x.v[n - 1 - j];
+            x.numbersVector[n - 1 - i] -= R.numbersMatrix[n - 1 - i][n - 1 - j] * x.numbersVector[n - 1 - j];
         }
-        x.v[n - 1 - i] /= R.a[n - 1 - i][n - 1 - i];
+        x.numbersVector[n - 1 - i] /= R.numbersMatrix[n - 1 - i][n - 1 - i];
     }
 
     return x;

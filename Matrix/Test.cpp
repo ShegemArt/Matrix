@@ -15,10 +15,10 @@ int main() {
         cout << "4 ---> QR\n";
         cout << "0 ---> Exit\n";
 
-        int k;
-        cin >> k;
+        int inputNumber;
+        cin >> inputNumber;
 
-        if (k == 0) break;
+        if (inputNumber == 0) break;
 
         int n;
         cout << "Enter matrix size n:\n";
@@ -28,33 +28,33 @@ int main() {
         cout << "Enter matrix A (" << n << "x" << n << "):\n";
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                cin >> A.a[i][j];
+                cin >> A.numbersMatrix[i][j];
             }
         }
 
         Vector b(n);
         cout << "Enter vector b:\n";
         for (int i = 0; i < n; i++) {
-            cin >> b.v[i];
+            cin >> b.numbersVector[i];
         }
 
         double e;
         cout << "Enter epsilon:\n";
         cin >> e;
 
-        Vector r;
+        Vector result;
 
-        if (k == 1) {
-            r = MPI(A, b, e, n);
+        if (inputNumber == 1) {
+            result = MPI(A, b, e, n);
         }
-        else if (k == 2) {
-            r = method_Seidel(A, b, e, n);
+        else if (inputNumber == 2) {
+            result = Seidel(A, b, e, n);
         }
-        else if (k == 3) {
-            r = PLU(A, b, n);
+        else if (inputNumber == 3) {
+            result = PLU(A, b, n);
         }
-        else if (k == 4) {
-            r = QR(A, b, n);
+        else if (inputNumber == 4) {
+            result = QR(A, b, n);
         }
         else {
             cout << "Wrong choice\n";
@@ -62,7 +62,7 @@ int main() {
         }
 
         cout << "\nSolution x:\n";
-        r.print();
+        result.Print();
     }
 
     return 0;

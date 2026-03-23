@@ -5,135 +5,101 @@
 
 using namespace std;
 
+// Класс представляет квадратную матрицу размера Dimension x Dimension
 struct Matrix {
-    int len;
-    vector<vector<double>> a;
+    // Размерность матрицы
+    int Dimension;
 
-    Matrix(int n = 0) : len(n), a(n, vector<double>(n, 0.0)) {}
+    // Двумерный вектор для хранения элементов матрицы
+    vector<vector<double>> numbersMatrix;
 
-    void input() {
-        for (int i = 0; i < len; i++)
-            for (int j = 0; j < len; j++)
-                cin >> a[i][j];
+    // Конструктор: создает матрицу размера n x n и заполняет её нулями
+    Matrix(int n = 0) : Dimension(n), numbersMatrix(n, vector<double>(n, 0.0)) {}
+
+    // Вводит элементов матрицы с консоли
+    void InputFromConsole() {
+        for (int i = 0; i < Dimension; i++)
+            for (int j = 0; j < Dimension; j++)
+                cin >> numbersMatrix[i][j];
     }
 
-
-    void print() const {
-        for (int i = 0; i < len; i++) {
-            for (int j = 0; j < len; j++) {
-                cout << a[i][j] << " ";
+    // Выводит матрицы на экран
+    void Print() const {
+        for (int i = 0; i < Dimension; i++) {
+            for (int j = 0; j < Dimension; j++) {
+                cout << numbersMatrix[i][j] << " ";
             }
             cout << "\n";
         }
         cout << "\n";
     }
 
-
-    static Matrix identity(int n) {
+    // Создает единичную матрицу размера n x n
+    static Matrix MakeIdentityMatrix(int n) {
         Matrix I(n);
         for (int i = 0; i < n; i++)
-            I.a[i][i] = 1;
+            I.numbersMatrix[i][i] = 1;
         return I;
     }
 
-    Matrix transpose() const {
-        Matrix t(len);
-        for (int i = 0; i < len; i++)
-            for (int j = 0; j < len; j++)
-                t.a[j][i] = a[i][j];
+    // Возвращает транспонированную матрицу
+    Matrix Transpose() const {
+        Matrix t(Dimension);
+        for (int i = 0; i < Dimension; i++)
+            for (int j = 0; j < Dimension; j++)
+                t.numbersMatrix[j][i] = numbersMatrix[i][j];
         return t;
-    }
-
-    static Matrix test0() {
-        Matrix m(3);
-        m.a = {
-            {0, 2, 3},
-            {1, 2, 4},
-            {4, 5, 6}
-        };
-        return m;
-    }
-
-    static Matrix test1(int n) {
-        int s = 12;
-        Matrix m(n);
-        for (int i = 0; i < n; i++)
-            for (int j = 0; j < n; j++)
-                m.a[i][j] = (i == j) ? (s + 2 * (i + 1)) : 1;
-        return m;
-    }
-
-    static Matrix test2(int n) {
-        int s = 12;
-        Matrix m(n);
-        for (int i = 0; i < n; i++)
-            for (int j = 0; j < n; j++)
-                m.a[i][j] = (i == j) ? -(s + 2 * (i + 1)) : 1;
-        return m;
-    }
-
-    static Matrix test5(int n, double e) {
-        int s = 12;
-        Matrix m(n);
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                if (i == j)
-                    m.a[i][j] = 1.0 + s * e;
-                else if (i < j)
-                    m.a[i][j] = -1 - s * e;
-                else
-                    m.a[i][j] = s * e;
-            }
-        }
-        return m;
     }
 };
 
-
+// Перегрузка оператора сложения матриц
 Matrix operator+(const Matrix& A, const Matrix& B) {
-    if (A.len != B.len)
+    if (A.Dimension != B.Dimension)
         throw invalid_argument("Different sizes");
 
-    Matrix C(A.len);
-    for (int i = 0; i < A.len; i++)
-        for (int j = 0; j < A.len; j++)
-            C.a[i][j] = A.a[i][j] + B.a[i][j];
+    Matrix C(A.Dimension);
+    for (int i = 0; i < A.Dimension; i++)
+        for (int j = 0; j < A.Dimension; j++)
+            C.numbersMatrix[i][j] = A.numbersMatrix[i][j] + B.numbersMatrix[i][j];
 
     return C;
 }
 
+// Перегрузка оператора вычитания матриц
 Matrix operator-(const Matrix& A, const Matrix& B) {
-    if (A.len != B.len)
+    if (A.Dimension != B.Dimension)
         throw invalid_argument("Different sizes");
 
-    Matrix C(A.len);
-    for (int i = 0; i < A.len; i++)
-        for (int j = 0; j < A.len; j++)
-            C.a[i][j] = A.a[i][j] - B.a[i][j];
+    Matrix C(A.Dimension);
+    for (int i = 0; i < A.Dimension; i++)
+        for (int j = 0; j < A.Dimension; j++)
+            C.numbersMatrix[i][j] = A.numbersMatrix[i][j] - B.numbersMatrix[i][j];
 
     return C;
 }
 
+// Перегрузка оператора умножения матриц
 Matrix operator*(const Matrix& A, const Matrix& B) {
-    if (A.len != B.len)
+    if (A.Dimension != B.Dimension)
         throw invalid_argument("Different sizes");
 
-    Matrix C(A.len);
-    for (int i = 0; i < A.len; i++) {
-        for (int j = 0; j < A.len; j++) {
-            for (int k = 0; k < A.len; k++) {
-                C.a[i][j] += A.a[i][k] * B.a[k][j];
+    Matrix C(A.Dimension);
+    for (int i = 0; i < A.Dimension; i++) {
+        for (int j = 0; j < A.Dimension; j++) {
+            for (int k = 0; k < A.Dimension; k++) {
+                C.numbersMatrix[i][j] += A.numbersMatrix[i][k] * B.numbersMatrix[k][j];
             }
         }
     }
     return C;
 }
 
+// Перегрузка оператора умножения матрицы на число
 Matrix operator*(double k, const Matrix& A) {
-    Matrix C(A.len);
-    for (int i = 0; i < A.len; i++)
-        for (int j = 0; j < A.len; j++)
-            C.a[i][j] = k * A.a[i][j];
+    Matrix C(A.Dimension);
+    for (int i = 0; i < A.Dimension; i++)
+        for (int j = 0; j < A.Dimension; j++)
+            C.numbersMatrix[i][j] = k * A.numbersMatrix[i][j];
 
     return C;
 }

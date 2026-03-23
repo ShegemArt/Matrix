@@ -2,31 +2,33 @@
 #include "Matrix.h"
 #pragma once
 
+// Перегрузка оператора умножения матрицы на вектор r = A * x
 Vector operator*(const Matrix& A, const Vector& x) {
-    if (A.len != x.n)
+    if (A.Dimension != x.Dimension)
         throw invalid_argument("Size mismatch");
 
-    Vector r(x.n);
+    Vector r(x.Dimension);
 
-    for (int i = 0; i < x.n; i++) {
-        for (int j = 0; j < x.n; j++) {
-            r.v[i] += A.a[i][j] * x.v[j];
+    for (int i = 0; i < x.Dimension; i++) {
+        for (int j = 0; j < x.Dimension; j++) {
+            r.numbersVector[i] += A.numbersMatrix[i][j] * x.numbersVector[j];
         }
     }
 
     return r;
 }
 
+// Перегрузка оператора умножения двух векторов
 Matrix operator*(const Vector& a, const Vector& b) {
     Matrix A;
-    A.len = a.n;
-
+    A.Dimension = a.Dimension;
+        
     // создаём матрицу n x n
-    A.a.resize(A.len, std::vector<double>(A.len));
+    A.numbersMatrix.resize(A.Dimension, std::vector<double>(A.Dimension));
 
-    for (int i = 0; i < a.n; i++) {
-        for (int j = 0; j < a.n; j++) {
-            A.a[i][j] = a.v[i] * b.v[j];
+    for (int i = 0; i < a.Dimension; i++) {
+        for (int j = 0; j < a.Dimension; j++) {
+            A.numbersMatrix[i][j] = a.numbersVector[i] * b.numbersVector[j];
         }
     }
 
