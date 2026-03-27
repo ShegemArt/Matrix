@@ -50,6 +50,23 @@ struct Matrix {
                 t.numbersMatrix[j][i] = numbersMatrix[i][j];
         return t;
     }
+
+    // Возвращает подматрицу заданной размерности ( оберзаются крайние столбцы/строки)
+    Matrix SubMatrix(int m) const {
+        if (m <= 0 || m > Dimension) {
+            throw std::invalid_argument("Invalid subMatrix size");
+        }
+
+        Matrix result(m);
+
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < m; j++) {
+                result.numbersMatrix[i][j] = numbersMatrix[i][j];
+            }
+        }
+
+        return result;
+    }
 };
 
 // Перегрузка оператора сложения матриц
